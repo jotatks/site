@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Um Convite Misterioso Para Você</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: none; /* Desabilita o scroll ao tocar na tela em dispositivos móveis */
+        }
+        .scratch-card {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* Aspect ratio 1:1 */
+            cursor: grab;
+            -webkit-tap-highlight-color: transparent;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .scratch-card.grabbing {
+            cursor: grabbing;
+        }
+        .scratch-card canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 1rem;
+        }
+        .scratch-card img.hidden-gif {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 1rem;
+            pointer-events: none;
+        }
+        .lock-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <div class="text-center mb-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">Raspadinha Misteriosa</h1>
+        <p class="text-gray-300 mt-2">Raspe e teste sua sorte, Sofia!</p>
+    </div>
+
+    <!-- Container das Raspadinhas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+        
+        <!-- Raspadinha 1: Roxa -->
+        <div id="card-1" class="scratch-card-container">
+            <div class="scratch-card" data-color1="#8b5cf6" data-color2="#4c1d95">
+                <img src="https://i.gifer.com/Ybif.gif" alt="GIF engraçado" class="hidden-gif">
+                <canvas id="canvas-1"></canvas>
+                <div class="lock-icon" style="opacity: 0;">🔒</div>
+            </div>
+        </div>
+
+        <!-- Raspadinha 2: Rosa -->
+        <div id="card-2" class="scratch-card-container">
+            <div class="scratch-card" data-color1="#ec4899" data-color2="#831843">
+                <img src="https://i.gifer.com/K9e.gif" alt="GIF de curiosidade" class="hidden-gif">
+                <canvas id="canvas-2"></canvas>
+                <div class="lock-icon" style="opacity: 1;">🔒</div>
+            </div>
+        </div>
+
+        <!-- Raspadinha 3: Vermelha -->
+        <div id="card-3" class="scratch-card-container">
+            <div class="scratch-card" data-color1="#f87171" data-color2="#991b1b">
+                <img src="https://i.gifer.com/D9u.gif" alt="GIF de prêmio" class="hidden-gif">
+                <canvas id="canvas-3"></canvas>
+                <div class="lock-icon" style="opacity: 1;">🔒</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Mensagem -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div id="modal-content" class="bg-gray-800 rounded-2xl p-6 sm:p-8 text-center max-w-md w-full transform scale-95 transition-transform duration-300">
+            <p id="modal-text" class="text-lg sm:text-xl mb-6"></p>
+            <div id="modal-actions">
+                <button id="close-modal-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-6 rounded-full transition-colors">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const messages = {
+                'card-1': "Não foi dessa vez, tente mais uma vez",
+                'card-2': "Parabéns você ganhou um <span class='uppercase font-bold text-green-400'>pix de R$ 1,00</span>",
+                'card-3': `
+                    <p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 mb-4">⭐ SUPER PRÊMIO! ⭐</p>
+                    <p>Essa foi uma forma um pouco diferente de te fazer um convite. Em vez de uma mensagem simples, quis criar algo que, quem sabe, te fizesse sorrir.</p>
+                    <p class="mt-4 font-semibold">A verdade é que eu adoraria te conhecer melhor. Então, a pergunta final é:</p>
+                    <p class="mt-4">Aceitas sair para jantar comigo e descobrir se a nossa conversa é tão boa quanto este jogo? 😉</p>
+                    <p class="mt-6 text-sm text-gray-400">– Jhonatan.</p>`
+            };
+
+            const modal = document.getElementById('message-modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalText = document.getElementById('modal-text');
+            const modalActions = document.getElementById('modal-actions');
+            
+            // Lógica para as raspadinhas
+            const scratchCards = [
+                setupScratchCard('card-1', () => unlockCard('card-2')),
+                setupScratchCard('card-2', () => unlockCard('card-3')),
+                setupScratchCard('card-3', () => {})
+            ];
+            
+            // Inicialmente, bloqueia as raspadinhas 2 e 3
+            scratchCards[1].lock();
+            scratchCards[2].lock();
+
+            function setupScratchCard(cardId, onComplete) {
+                const container = document.getElementById(cardId);
+                const card = container.querySelector('.scratch-card');
+                const canvas = container.querySelector('canvas');
+                const lockIcon = container.querySelector('.lock-icon');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                
+                let isLocked = false;
+                let isCompleted = false;
+                let isDrawing = false;
+                
+                function resizeCanvas() {
+                    const rect = card.getBoundingClientRect();
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+                    redraw();
+                }
+
+                function redraw() {
+                    if (isCompleted) return;
+                    
+                    // NOVA LÓGICA: Desenha um gradiente para parecer mais com uma raspadinha
+                    const color1 = card.dataset.color1;
+                    const color2 = card.dataset.color2;
+                    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                    gradient.addColorStop(0, color1);
+                    gradient.addColorStop(1, color2);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                function getScratchPosition(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    const touch = e.touches ? e.touches[0] : e;
+                    return {
+                        x: touch.clientX - rect.left,
+                        y: touch.clientY - rect.top
+                    };
+                }
+
+                function scratch(e) {
+                    if (!isDrawing || isLocked || isCompleted) return;
+                    e.preventDefault();
+                    const pos = getScratchPosition(e);
+                    
+                    // A "raspagem" apaga o conteúdo do canvas (o gradiente)
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, Math.min(canvas.width, canvas.height) * 0.12, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                function startDrawing(e) {
+                    if (isLocked || isCompleted) return;
+                    isDrawing = true;
+                    card.classList.add('grabbing');
+                    scratch(e);
+                }
+
+                function stopDrawing() {
+                    if (isLocked || isCompleted) return;
+                    isDrawing = false;
+                    card.classList.remove('grabbing');
+                    checkCompletion();
+                }
+                
+                function checkCompletion() {
+                    if (isCompleted) return;
+                    
+                    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = pixels.data;
+                    const totalPixels = data.length / 4;
+                    let transparentPixels = 0;
+
+                    for (let i = 3; i < data.length; i += 4) {
+                        if (data[i] === 0) {
+                            transparentPixels++;
+                        }
+                    }
+
+                    const scratchedPercentage = (transparentPixels / totalPixels) * 100;
+                    
+                    if (scratchedPercentage > 50) {
+                        isCompleted = true;
+                        canvas.style.transition = 'opacity 0.7s ease-out';
+                        canvas.style.opacity = '0';
+                        showModal(cardId);
+                        if(onComplete) onComplete();
+                    }
+                }
+
+                // Event Listeners
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', scratch);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseleave', stopDrawing);
+
+                canvas.addEventListener('touchstart', startDrawing);
+                canvas.addEventListener('touchmove', scratch);
+                canvas.addEventListener('touchend', stopDrawing);
+                canvas.addEventListener('touchcancel', stopDrawing);
+                
+                window.addEventListener('resize', resizeCanvas);
+                
+                setTimeout(resizeCanvas, 100);
+
+                return {
+                    lock: () => { 
+                        isLocked = true;
+                        lockIcon.style.opacity = '1';
+                    },
+                    unlock: () => {
+                        isLocked = false;
+                        lockIcon.style.opacity = '0';
+                    },
+                    isCompleted: () => isCompleted
+                };
+            }
+            
+            function showModal(cardId) {
+                modalText.innerHTML = messages[cardId];
+                
+                while (modalActions.firstChild) {
+                    modalActions.removeChild(modalActions.firstChild);
+                }
+
+                if (cardId === 'card-3') {
+                     const inviteButton = document.createElement('a');
+                    inviteButton.href = "https://www.instagram.com/direct/t/YOUR_INSTAGRAM_THREAD_ID";
+                    inviteButton.target = "_blank";
+                    inviteButton.rel = "noopener noreferrer";
+                    inviteButton.className = "bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full transition-colors inline-block";
+                    inviteButton.textContent = "Aceito o convite! ✨";
+
+                    modalActions.appendChild(inviteButton);
+
+                } else {
+                    const closeButton = document.createElement('button');
+                    closeButton.className = "bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-6 rounded-full transition-colors";
+                    closeButton.textContent = "Continuar";
+                    closeButton.onclick = hideModal;
+                    modalActions.appendChild(closeButton);
+                }
+
+                modal.classList.remove('pointer-events-none');
+                modal.classList.add('opacity-100');
+                modalContent.classList.add('scale-100');
+            }
+
+            function hideModal() {
+                modal.classList.add('pointer-events-none');
+                modal.classList.remove('opacity-100');
+                modalContent.classList.remove('scale-100');
+            }
+            
+            function unlockCard(cardIdToUnlock) {
+                const cardIndex = parseInt(cardIdToUnlock.split('-')[1]) - 1;
+                if(scratchCards[cardIndex]) {
+                    scratchCards[cardIndex].unlock();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
