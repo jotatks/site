@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uma Surpresa para Sofia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        h1, .font-dancing { font-family: 'Dancing Script', cursive; }
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+        .heart {
+            position: absolute;
+            left: var(--x-pos);
+            font-size: var(--size);
+            color: var(--color);
+            animation: float var(--duration) var(--delay) linear infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .box-pulse { animation: pulse 2.5s infinite ease-in-out; }
+        .screen {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 to-purple-100 overflow-x-hidden min-h-screen flex items-center justify-center p-4">
+
+    <div id="hearts-container" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0"></div>
+
+    <!-- Tela Inicial -->
+    <main id="tela-inicial" class="screen text-center z-10">
+        <h1 class="text-5xl sm:text-6xl md:text-8xl text-pink-500 mb-4">Caixinha de Surpresas 🎁</h1>
+        <p class="text-lg sm:text-xl md:text-3xl text-gray-600 mb-8 font-dancing">Sofia, uma dessas caixinhas tem algo só pra você...</p>
+        <button id="start-button" class="bg-pink-400 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-pink-500 transform hover:scale-110 transition-all duration-300">
+            Abrir Caixinhas 💝
+        </button>
+    </main>
+
+    <!-- Tela do Jogo -->
+    <section id="tela-jogo" class="screen hidden z-10 w-full max-w-4xl relative">
+         <h2 class="text-2xl sm:text-3xl md:text-4xl text-center text-purple-500 mb-8 font-dancing">encontre a caixa certa...</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 md:gap-12"></div>
+    </section>
+    
+    <!-- Tela do Convite (Integrada) -->
+    <section id="tela-convite" class="screen hidden z-10">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 md:p-12 text-center max-w-2xl w-full">
+            <h1 class="text-4xl sm:text-5xl md:text-7xl text-rose-500 mb-6">Para a Sofia,</h1>
+            <div class="text-left text-gray-700 space-y-4 text-base sm:text-lg md:text-xl">
+                <p>Você acaba de desbloquear um convite único: um jantar especial, só para nós dois.</p>
+                <p>Sem pressa, só boa comida, risadas e uma noite para descobrir o que pode acontecer.</p>
+                <p>Que tal aceitar esse convite e transformar essa surpresa em um momento inesquecível?</p>
+            </div>
+            <div class="text-center mt-6">
+                <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2I5cWF5Y2FuY2xyOGw5dnYxNjBheG4xbTk5NGo3MmF0eHJscWphdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ukDfpxpJG9pHkO3HDm/giphy.gif" alt="Ursinho com um coração" class="mx-auto rounded-lg" style="max-height: 150px;">
+            </div>
+            <!-- Botão de Ação -->
+            <div class="mt-8 text-center">
+                <a href="https://wa.me/5547988659770" target="_blank" class="inline-block bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-600 transform hover:scale-105 transition-all duration-300">
+                    Aceitar Convite
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal para Mensagens -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-center max-w-sm w-full relative transform transition-transform duration-300 scale-95">
+             <div id="modal-message" class="text-xl md:text-2xl text-gray-700 mb-6"></div>
+             <div id="modal-action"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Seletores de Elementos ---
+            const telas = {
+                inicial: document.getElementById('tela-inicial'),
+                jogo: document.getElementById('tela-jogo'),
+                convite: document.getElementById('tela-convite'),
+            };
+            const startButton = document.getElementById('start-button');
+            const gameContainer = telas.jogo.querySelector('.grid');
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalMessage = document.getElementById('modal-message');
+            const modalAction = document.getElementById('modal-action');
+            const heartsContainer = document.getElementById('hearts-container');
+
+            function showScreen(screenName) {
+                Object.values(telas).forEach(tela => tela.classList.add('hidden', 'opacity-0'));
+                telas[screenName].classList.remove('hidden');
+                setTimeout(() => telas[screenName].classList.remove('opacity-0'), 50);
+            }
+
+            // --- Animações de Fundo ---
+            for (let i = 0; i < 20; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = ['❤️', '🌸', '💖', '✨', '💕'][Math.floor(Math.random() * 5)];
+                heart.style.setProperty('--x-pos', `${Math.random() * 100}vw`);
+                heart.style.setProperty('--size', `${0.5 + Math.random() * 1.5}rem`);
+                heart.style.setProperty('--duration', `${5 + Math.random() * 5}s`);
+                heart.style.setProperty('--delay', `${-Math.random() * 10}s`);
+                heart.style.setProperty('--color', ['#ff7a7a', '#ffc0cb', '#e0b0ff', '#f0f0a0'][Math.floor(Math.random() * 4)]);
+                heartsContainer.appendChild(heart);
+            }
+            
+            // --- Lógica do Jogo ---
+            let clicksCount = 0;
+            const finalMessage = "Essa era a caixinha especial.<br>E o que tem dentro...<br>não cabe aqui.";
+            const boxData = [
+                { message: "Um ursinho de pelúcia… fofo, mas não é a surpresa!<br><img src='https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExN241NzhoaDJzZWlmcnJyYTNuOWNuNXd6YnNsZXhhcGQ5c3AxNDhuMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/PaiePPzQ8AtCU/giphy.gif' alt='Ursinho de pelúcia acenando' class='mt-3 rounded-lg mx-auto' style='max-height: 120px;'/>", color: 'bg-gray-300 hover:bg-gray-400' },
+                { message: "Um cachorro dançarino!<br><img src='https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWdyaGphMHBtdWtwMnBxa2cwNGd0NHVzNmk5Z2xvZXBnMnBzdHVycCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/OnQqgkPWJ17DG/giphy.gif' alt='Cachorro dançando' class='mt-3 rounded-lg mx-auto' style='max-height: 120px;'/>", color: 'bg-purple-300 hover:bg-purple-400' },
+                { message: "Quase lá . tente mais uma vez<br><img src='https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExazdzcWtjNTk1dWx5ZGR5MTFqcGJ3eXI3NjZsbnRldzBua21zZHIxbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QtuuT23dF9KIU/giphy.gif' alt='Gato fofo' class='mt-3 rounded-lg mx-auto' style='max-height: 120px;'/>", color: 'bg-pink-300 hover:bg-pink-400' }
+            ];
+
+            function createBoxes() {
+                gameContainer.innerHTML = '';
+                const shuffledBoxes = [...boxData].sort(() => Math.random() - 0.5);
+
+                shuffledBoxes.forEach(data => {
+                    const boxWrapper = document.createElement('div');
+                    boxWrapper.className = `box-pulse aspect-square rounded-2xl cursor-pointer shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-2xl relative flex items-center justify-center ${data.color}`;
+                    boxWrapper.dataset.message = data.message;
+                    boxWrapper.innerHTML = '<div class="text-6xl opacity-70">🎁</div>';
+                    boxWrapper.addEventListener('click', handleBoxClick);
+                    gameContainer.appendChild(boxWrapper);
+                });
+            }
+
+            function handleBoxClick(event) {
+                const box = event.currentTarget;
+                if (box.classList.contains('disabled')) return; 
+
+                clicksCount++;
+                const message = box.dataset.message;
+                
+                box.classList.add('opacity-70', 'cursor-not-allowed', 'disabled');
+                box.classList.remove('hover:scale-110', 'box-pulse', 'hover:shadow-2xl');
+                box.style.animation = 'none';
+                
+                if (clicksCount < 3) {
+                    openModal(message, false);
+                } else {
+                    box.classList.remove('opacity-70');
+                    box.classList.add('ring-4', 'ring-yellow-400', 'ring-offset-2');
+                    openModal(finalMessage, true);
+                }
+            }
+            
+            function openModal(message, isFinal) {
+                modalMessage.innerHTML = message;
+                modalAction.innerHTML = ''; 
+
+                if (isFinal) {
+                    modalMessage.innerHTML += `<p class="text-lg text-gray-600 mt-4">Quer descobrir o que tem dentro de verdade?</p>`;
+                    const revealButton = document.createElement('button');
+                    revealButton.className = 'mt-4 inline-block bg-rose-500 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:bg-rose-600 transform hover:scale-105 transition-all duration-300';
+                    revealButton.textContent = 'Ver a mensagem 💌';
+                    revealButton.onclick = () => {
+                        closeModal();
+                        showScreen('convite');
+                    };
+                    modalAction.appendChild(revealButton);
+                    
+                } else {
+                    const closeButton = document.createElement('button');
+                    closeButton.className = 'mt-4 bg-gray-300 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-400 transition-colors duration-300';
+                    closeButton.textContent = 'Fechar';
+                    closeButton.onclick = closeModal;
+                    modalAction.appendChild(closeButton);
+                }
+                
+                modal.classList.remove('hidden');
+                setTimeout(() => modalContent.classList.remove('scale-95'), 10);
+            }
+
+            function closeModal() {
+                modalContent.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+
+            function resetGame() {
+                clicksCount = 0;
+                createBoxes();
+                showScreen('inicial');
+            }
+
+            startButton.addEventListener('click', () => showScreen('jogo'));
+            
+            // Lógica do botão de reset removida para que a experiência seja única
+            const resetButton = document.getElementById('reset-button');
+            if(resetButton) {
+                resetButton.addEventListener('click', resetGame);
+            }
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal && modalAction.querySelector('button[onclick="closeModal()"]')) {
+                   closeModal();
+                }
+            });
+            
+            resetGame();
+        });
+    </script>
+</body>
+</html>
